@@ -1,0 +1,81 @@
+/*The Cascading Style Sheets (CSS) allow us to control how the HTML looks*/
+.grayedOut {
+    background-color: lightgray;
+}
+p {
+    display: table-row;
+}
+label, output {
+    display: table-cell;
+}
+input {
+    display: table-cell;
+    line-height: 1em;
+    border: 1px solid black;
+}
+    input[type=text] {
+        width: 10em;
+    }
+    input[type=number] {
+        width: 4em;
+    }
+.grid-container {
+    /*This contains the layout of the app*/
+    display: grid;
+    /*This line divides the page into 4 + 0 + 3 = 7 equal parts, with two main sections; ig and it*/
+    grid-template-rows: [ig-start] 4fr [ig-end] 0fr [it-start] 3fr [it-end];
+    /*This line divides the page into 4 + 0 + 5 = 9 equal parts, with two main sections; input and data*/
+    grid-template-columns: [input-start] 4fr [input-end] 0fr [data-start] 5fr [data-end];
+    /*This results in a page divided into 4 blocks: 
+        Upper-Left: 4/7th x 4/9th Upper-Right: 4/7th x 5/9th
+        Lower-Left: 3/7th x 4/9th Lower-Right: 3/7th x 5/9th
+    */
+}
+.gGraph {
+    /*This holds all our inputs. They go in the upper left and upper right blocks*/
+    grid-column: data;
+    grid-row: ig;
+}
+.gInput {
+    grid-column: input;
+    /*goes from the line ig-start to it-end. IOW it takes up all rows of the input column*/
+    grid-row-start: ig-start;
+    grid-row-end: it-end;
+}
+.paddingInputs {/*This lets us separate the inputs into groups*/
+    padding-bottom: 2em;
+    display: table;
+}
+.gTable {
+    table-layout: fixed;
+    border-collapse: collapse;
+    grid-column: data;
+    grid-row-start: it-start;
+    grid-row-end: it-end;
+}
+
+    .gTable tbody {
+        display: block;
+        width: 100%;
+        overflow: auto;
+    }
+
+    .gTable thead tr {
+        display: block;
+    }
+
+    .gTable thead {
+        background: gray;
+        color: #fff;
+    }
+
+    .gTable td {
+        border: 1px solid #797878;
+    }
+
+    .gTable th,
+    .gTable td {
+        width: 20%;
+        text-align: center;
+        float: left;
+    }

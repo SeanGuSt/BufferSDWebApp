@@ -1,0 +1,2 @@
+C:\Users\scg2600\source\repos\BufferSDWebApp\BufferSDWebApp\obj\Any CPU\Debug\BufferSDWebApp.pyproj.SuggestedBindingRedirects.cache
+C:\Users\scg2600\source\repos\BufferSDWebApp\BufferSDWebApp\obj\Any CPU\Debug\BufferSDWebApp.pyproj.CoreCompileInputs.cache

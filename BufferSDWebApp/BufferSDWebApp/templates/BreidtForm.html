@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--This is the head, where initial things like scripts and packages used are announced-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BufferCapacity3</title>
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <py-config>
+        packages = ["numpy", "pandas", "json5", "scipy"]
+    </py-config>
+    <!--Holds code for handling events like clicking or inputting files-->
+    <py-script src="{{url_for('static', filename='/pyscripts/EventsFile.py')}}"></py-script>
+    <!--Holds code to make the acid and base titration scatter plots-->
+    <py-script src="{{url_for('static', filename='/pyscripts/plotTitration.py')}}"></py-script>
+    <!--Holds code to make the buffer capacity curve and fill in gaps-->
+    <py-script src="{{url_for('static', filename='/pyscripts/GenBCCurve.py')}}"></py-script>
+    <!--Holds code to make the final model-->
+    <py-script src="{{url_for('static', filename='/pyscripts/ModelBCCurve.py')}}"></py-script>
+    <py-script src="{{url_for('static', filename='/pyscripts/fminconpy.py')}}"></py-script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script src="{{url_for('static', filename='/scripts/ButtonColorHandling.js')}}"></script>
+    <link rel="stylesheet" href="{{url_for('static', filename='/content/myCSS.css')}}">
+
+</head>
+<body>
+    <div class="grid-container">
+        <!--The ids are like the input fields' variable names-->
+        <div class="gInput">
+            <!--Tables are how the different inputs are divided. I'm considering changing to a grid layout once we've gotten more of this done.-->
+            <div class="paddingInputs">
+                <p><label for="paramFile">Input Parameters File: </label><input type="file" id="paramFile" /></p>
+                <p><label for="paramDefaults">Use Dev Defined Defaults: </label><input type="checkbox" id="paramDefaults" py-change="pyParamsSetter(Element('paramDefaults').element.checked, defaultDict)" accept=".csv"/></p>
+                <p><label for="ingredient">Ingredient: </label><input type="text" id="ingredient" name="ingredient" />
+            </div>
+            <!--Parameters for generating the BC curve-->
+            <div class="paddingInputs">
+                <p><label for="conTitr">Concentration in titration (%): </label> <input type="number" id="conTitr" name="conTitr" min="0" max="100" size="10" /></p>
+                <p><label for="HCl">Acid Concentration (N): </label> <input type="number" id="HCl" name="HCl" min="0" /></p>
+                <p><label for="NaOH">Base Concentration (N): </label> <input type="number" id="NaOH" name="NaOH" min="0" /></p>
+                <p><label for="Init_Vol">Volume titrated (L): </label> <input type="number" id="Init_Vol" name="Init_Vol" min="0" /></p>
+                <p><label for="NaClpercent">NaCl (%): </label> <input type="number" id="NaClpercent" name="NaClpercent" min="0" max="100" />
+            </div>
+            <!--For security, some changes will need to be made for these. File uploads can lead to big vulnerabilities.-->
+            <div class="paddingInputs">
+                <p><label for="acid_titr_button">Open Acid Titration File: </label> <input type="file" id="acid_titr_button" accept=".RPT" /></p>
+                <p><label for="base_titr_button">Open Base Titration File: </label> <input type="file" id="base_titr_button" accept=".RPT" /></p>
+                <input type="button" id="BC_Curve_button" value="Generate BC Curve" />
+            </div>
+            <!--This is for trimming-->
+            <div class="paddingInputs">
+                <p><input type="button" id="trim_domain_button" value="Trim Graph" onclick="trimSettings(this)" /></p>
+                <p><label for="Trim_beg">Trim Beginning: </label> <input type="number" id="Trim_beg" readonly="readonly" class="grayedOut" min="0" max="14" /></p>
+                <p><label for="Trim_end">Trim End: </label> <input type="number" id="Trim_end" readonly="readonly" class="grayedOut" min="0" max="14" /></p>
+            </div>
+            <!--This button is for the final step-->
+            <div class="paddingInputs">
+                <p><input type="button" id="BC_Model_button" value="Model BC Curve" /></p>
+                <p><label for="adjc_checkbox">Use adjC</label><input type="checkbox" id="adjc_checkbox" /></p>
+                <p><label for="sse">Model SSE: </label> <output id="sse" name="sse" /></p>
+                <p><label for="eph">Estimated pH: </label> <output id="eph" name="eph" /></p>
+                <p><label for="adjc">adjC Value (M): </label> <output id="adjc" name="adjc" /></p>
+                <p><label for="tb">tBeta: </label> <output id="tb" name="tb" /></p>
+            </div>
+            <!--Inputs needed, but not shown. Hence "hidden"-->
+            <input type="hidden" id="pH" />
+            <input type="hidden" id="MinGap" />
+            <input type="hidden" id="Increment" />
+            <input type="hidden" id="Order" />
+            <input type="hidden" id="NpKs" />
+            <input type="hidden" id="MinConc" />
+            <input type="hidden" id="pK_tol" />
+            <input type="hidden" id="LB" />
+            <input type="hidden" id="UB" />
+        </div>
+
+        <div class="gGraph"><canvas id="chartCurve"></canvas></div><!--This line holds our graph. Or, rather, the canvas for it-->
+        <script type="text/javascript" src="{{url_for('static', filename='/scripts/GraphHandling.js')}}"></script><!--This is the code to make the graph-->
+        <table class="gTable" id="myTable" style="border: 1px solid black;">
+            <!--This is the table for data points-->
+            <thead>
+                <tr>
+                    <th>Consc (M)</th>
+                    <th>pK</th>
+                    <th>a/b</th>
+                    <th>Beta</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
