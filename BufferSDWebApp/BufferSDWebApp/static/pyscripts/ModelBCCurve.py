@@ -1,6 +1,6 @@
 import numpy as np
 #from fminconpy import SimplexBCPK_DF5
-#from GenBCCurve import BetaModel_AB
+#from EventsFile import BetaModel_AB
 from decimal import Decimal, localcontext, ROUND_HALF_UP
 def pyModelBCCurve(order, NpKs, minConc, pK_tol, NaClpercent, LB, UB, X, Y):#Equivalent of part of app.ModelBCCurveButtonPushed
     res = SCBC_fit(X, Y, order)#get trig data: python, found below

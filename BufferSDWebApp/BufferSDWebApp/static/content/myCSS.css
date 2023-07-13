@@ -52,30 +52,9 @@ input {
     grid-column: data;
     grid-row-start: it-start;
     grid-row-end: it-end;
+    border: 1px solid black;
 }
-
-    .gTable tbody {
-        display: block;
-        width: 100%;
-        overflow: auto;
-    }
-
-    .gTable thead tr {
-        display: block;
-    }
-
-    .gTable thead {
-        background: gray;
-        color: #fff;
-    }
-
-    .gTable td {
-        border: 1px solid #797878;
-    }
-
-    .gTable th,
-    .gTable td {
-        width: 20%;
+    .gTable th, td{
+        border:1px solid black;
         text-align: center;
-        float: left;
     }

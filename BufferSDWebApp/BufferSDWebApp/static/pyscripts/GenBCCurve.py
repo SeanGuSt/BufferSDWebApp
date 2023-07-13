@@ -29,8 +29,8 @@ def pyGenBCCurve(init_vol, molHCl, molNaOH, removeVal, mingaps, increment, acid_
     oriBC = BC
     D2B["BC"] = oriBC
 
-    BC = fillGaps(D2B["BC"], mingaps, increment)#python, found below
-    return D2B, oriBC, BC
+    fillBC = fillGaps(oriBC, mingaps, increment)#python, found below
+    return D2B, oriBC, fillBC
 
 def tCurve(titr_x, titr_y, molarity, init_vol):
     #get BC results for each titration and add index values for each data set
@@ -61,7 +61,7 @@ def fillGaps(BCCurve, mingaps, increment):#Equivalent to FillGaps from FillGaps.
     if np.all(gapList == 0):            #check to see if gaps existed
         return BCCurve                  #just return original function, end function if no gaps
     rows, cols = gapList.shape          #get number of gaps in the list
-    newBC = BCCurve[:]#set up new BC curve, return matrix
+    fillBC = BCCurve[:]#set up new BC curve, return matrix
 
     #process gap list and add fills to newBC curve
     for row in range(rows):#for each gap
@@ -77,10 +77,12 @@ def fillGaps(BCCurve, mingaps, increment):#Equivalent to FillGaps from FillGaps.
         yvalvec = lineSlope*xvalvec + lineIntercept
         #make xy vectors into Nx2
         newInputs = np.hstack((xvalvec[:, np.newaxis], yvalvec[:, np.newaxis]))
-        newBC = np.vstack((newBC,newInputs))
+        fillBC = np.vstack((fillBC,newInputs))
     #sort new BC curve with filled gap data by pH values
-    ind = np.argsort(newBC[:,0])
-    return newBC[ind]
+    ind = np.argsort(fillBC[:,0])
+    fillBC = fillBC[ind]
+    TF = [x in BCCurve for x in fillBC]
+    return np.delete(fillBC, TF, 0)
 
 
 def findGaps(BCCurve, mingapsize):#Equivalent to FindGaps from FillGaps.m

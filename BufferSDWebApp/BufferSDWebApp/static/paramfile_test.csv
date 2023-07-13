@@ -1,0 +1,17 @@
+Value,Parameter,Units,Description
+0.05,pH,pH,Data2Beta to generate curve w/o jumps
+15,Order,Int,SCBCfit number of harmonics
+0.001,MinConc,Molar,SCBCfit and SimplexBCPK_DF minimim buffer M/L
+2,NaClpercent,%,SimplexBCPK_DF NaCl percent
+7,NpKs,Int,SimplexBCPK_DF number of pKs for starting AB matrix
+12,UB,pH,SimplexBCPK_DF upper pH range for BC curve fit
+2,LB,pH,SimplexBCPK_DF lower pH range
+0.2,pK_tol,pH,SimplexBCPK_DF pH range for too-similar pK vals
+0,Trim_beg,Int,DriveFit trim off begining to balance end
+0,Trim_end,Int,DriveFit trim off end to balance begining
+0.3,MinGap,Float,Minimum gap in pH for not autofilling BC curve
+0.1,Increment,Float,Increment pH value for gap filling of BC curve
+2,HCl,Normality,Normality of HCl used for titration
+2,NaOH,Normality,Normalty of NaOH used for titration
+0.05,Init_Vol,Liter,Volume (L) of initial titration
+ingredient,ingredient,name,bleh

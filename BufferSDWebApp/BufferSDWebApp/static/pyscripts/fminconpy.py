@@ -1,6 +1,6 @@
 from scipy.optimize import Bounds, minimize as fmincon
 import numpy as np
-#from GenBCCurve import BetaModel_AB
+#from EventsFile import BetaModel_AB
 def SimplexBCPK_DF5(ObsXY, ABmat, minConc, pK_tol, LB, UB):#Equivalent of SimplexBCPK_DF5 from SimplexBCPK_DF5.m
     #assignments
     SPX = {"ABmat":None, "BCmat":None, "Pred":None, "SSE":None, "Obs":None}
@@ -33,22 +33,19 @@ def SimplexBCPK_DF5(ObsXY, ABmat, minConc, pK_tol, LB, UB):#Equivalent of Simple
     fhan = lambda p:CalcSSE(p, salt, ObsX, ObsY)#anon. function SSE: python, found here
     bound = Bounds(lbvec, ubvec)#Define bounds for optimization
     #scipy.optimize.minimize is equivalent to fmincon from MATLAB in this instance
-    res = fmincon(fhan, paramvec, bounds=bound)#optimize with constraints
+    res = fmincon(fhan, paramvec, tol=1e-20, bounds=bound)#optimize with constraints
 
     #regenerate AB matrix
     ABmat_pred = paramvec2ABvals(res.x)#convert linear vector to ABmat: python, found here
-
     #adjust AB matrix (remove very small or neg values and combine like pKs)
     ABmat_pred = ABmat_pred[abs(ABmat_pred[:,0])>minConc, :]#keep values that meet condition for minimum conc in AB
-    ABmat_pred = combineABs(ABmat_pred, 0.3)#combine rows w/similar pKs 
+    ABmat_pred = combineABs(ABmat_pred, 0.3)#combine rows w/similar pKs
 
     #set pred data
     if zeroflag:
         ABmat_pred = np.zeros((1, 2))
-        SPX["Pred"] = BetaModel_AB(ABmat_pred,salt, PredX)#returns Nx2 (pH,BC): python, EventsFile.py
-    else:
-        #Predicted data with BetaModel
-        SPX["Pred"] = BetaModel_AB(ABmat_pred,salt, PredX)#returns Nx2 (pH,BC)
+    #Predicted data with BetaModel
+    SPX["Pred"] = BetaModel_AB(ABmat_pred,salt, PredX)#returns Nx2 (pH,BC)
     if any(ABmat_pred[:,0] == 0):#dont call with a zero conc row
         SPX["BCmat"] = np.zeros((1,2))#return 1x2 zero matrix
     else:
