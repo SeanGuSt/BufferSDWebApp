@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import minimize as fminsearch
 def pyGetAdjCT(targetpH, ABtable, IS):
     adjC = 0
-    fhan = lambda adjC:CalcError(adjC, targetpH, ABtable, IS)#anon. function SSE: python, found here
+    fhan = lambda adjC:CalcError(adjC, targetpH, ABtable, IS)#anon. function CalcError: python, found here
     return fminsearch(fhan, adjC, method='Nelder-Mead')
 
 def CalcError(adjC, targetpH, ABtable, IS):
@@ -35,7 +35,7 @@ def getFx(rowCount, concpK, Kw, H, adjC, ab_chars):
     zval = (Kw/H) - H + adjC
     for i in range(rowCount):
         J = concpK[0][i]
-        K = 10**-concpK[1][i]
+        K = 10**(-concpK[1][i])
         if ab_chars[i] == "a":
             zval += K*J/(H+K)
         elif ab_chars[i] == "b":
@@ -48,7 +48,6 @@ def getFp(rowCount, concpK, Kw, H):
         J = concpK[0][i]
         K = 10**-concpK[1][i]
         zval -= (J*K)/np.power(K + H, 2)
-    
     return float(zval)
 
 def adjpka(pKo, IS):

@@ -3,6 +3,7 @@
 <head>
     <!--This is the head, where initial things like scripts and packages used are announced-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Sean Guidry Stanteen">
     <title>BufferCapacity3</title>
     <script defer src="https://pyscript.net/latest/pyscript.js"></script>
     <py-config>
@@ -20,9 +21,7 @@
     <py-script src="{{url_for('static', filename='/pyscripts/getAdjCT.py')}}"></py-script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
-    <script src="{{url_for('static', filename='/scripts/ButtonColorHandling.js')}}"></script>
     <link rel="stylesheet" href="{{url_for('static', filename='/content/myCSS.css')}}">
-
 </head>
 <body>
     <div class="grid-container">
@@ -31,7 +30,7 @@
             <!--Tables are how the different inputs are divided. I'm considering changing to a grid layout once we've gotten more of this done.-->
             <div class="paddingInputs">
                 <p><label for="paramFile">Input Parameters File: </label><input type="file" id="paramFile" /></p>
-                <p><label for="paramDefaults">Use Dev Defined Defaults: </label><input type="checkbox" id="paramDefaults" py-change="pyParamsSetter(Element('paramDefaults').element.checked, defaultDict)" accept=".csv" /></p>
+                <p><label for="paramDefaults">Use Dev Defined Defaults: </label><input type="checkbox" id="paramDefaults" accept=".csv" /></p>
                 <p><a href="{{url_for('static', filename='paramfile_test.csv')}}">Download Defaults</a></p>
                 <p><label for="ingredient">Ingredient: </label><input type="text" id="ingredient" name="ingredient" />
             </div>
@@ -45,15 +44,15 @@
             </div>
             <!--For security, some changes will need to be made for these. File uploads can lead to big vulnerabilities.-->
             <div class="paddingInputs">
-                <p><label for="acid_titr_button">Open Acid Titration File: </label> <input type="file" id="acid_titr_button" accept=".RPT" /></p>
-                <p><label for="base_titr_button">Open Base Titration File: </label> <input type="file" id="base_titr_button" accept=".RPT" /></p>
+                <p><label for="acid_titr_button">Open Acid Titration File: </label> <input type="file" id="acid_titr_button" accept=".RPT" readonly /></p>
+                <p><label for="base_titr_button">Open Base Titration File: </label> <input type="file" id="base_titr_button" accept=".RPT" readonly /></p>
                 <input type="button" id="BC_Curve_button" value="Generate BC Curve" />
             </div>
             <!--This is for trimming-->
             <div class="paddingInputs">
-                <p><label for="electrode_shift">pH Electrode &plusmn;0.5: </label><input type="number" id="electrode_shift" min="-0.5" max="0.5"/></p>
-                <p><label for="Trim_beg">Trim Beginning: </label> <input type="number" id="Trim_beg" min="0" max="14" /></p>
-                <p><label for="Trim_end">Trim End: </label> <input type="number" id="Trim_end" min="0" max="14" /></p>
+                <p><label for="electrode_shift">pH Electrode &plusmn;0.5: </label><input type="number" id="electrode_shift" min="-0.5" max="0.5" value="0" readonly /></p>
+                <p><label for="Trim_beg">Trim Beginning: </label> <input type="number" id="Trim_beg" min="0" value="0" readonly /></p>
+                <p><label for="Trim_end">Trim End: </label> <input type="number" id="Trim_end" min="0" value="0" readonly /></p>
             </div>
             <!--This button is for the final step-->
             <div class="paddingInputs">
@@ -63,7 +62,7 @@
                 <p><label for="eph">Estimated pH: </label> <output id="eph" name="eph" /></p>
                 <p><label for="adjc">adjC Value (M): </label> <output id="adjc" name="adjc" /></p>
                 <p><label for="tb">tBeta: </label> <output id="tb" name="tb" /></p>
-                <p><input type="button" id="clear_button" value="Clear All" onclick="changeProgramLevel(0)"/></p>
+                <p><input type="button" id="clear_button" value="Clear All" /></p>
             </div>
             <!--Inputs needed, but not shown. Hence "hidden"-->
             <input type="hidden" id="pH" />
@@ -91,7 +90,10 @@
             <tbody>
             </tbody>
         </table>
-        <script type="text/javascript" src="{{url_for('static', filename='/scripts/GraphHandling.js')}}"></script><!--This is the code to make the graph-->
+        <!--This is the code to make the graph-->
+        <script type="text/javascript" src="{{url_for('static', filename='/scripts/GraphHandling.js')}}"></script>
+        <script src="{{url_for('static', filename='/scripts/InputHandling.js')}}"></script>
+        <script src="{{url_for('static', filename='/scripts/TableHandling.js')}}"></script>
     </div>
 </body>
 </html>

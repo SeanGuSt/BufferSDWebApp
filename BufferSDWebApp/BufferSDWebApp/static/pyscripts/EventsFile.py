@@ -1,6 +1,5 @@
 import numpy as np
-
-from js import document, chartCurve, JSON, setupTable, abSwap, programAtLeastLevel, plotThing, plotBC, numberCleanup, changeProgramLevel, programAtLevel
+from js import document, chartCurve, JSON, setupTable, abSwap, programAtLeastLevel, plotThing, plotBC, numberCleanup, changeProgramLevel
 from pyodide.ffi import create_proxy
 from json import dumps, loads
 import pandas as pd
@@ -53,7 +52,8 @@ async def preParamsSetter(event):#Equivalent to app.setParamTable
         #defaultDic = pd.read_csv("static/paramfile_test.csv", engine="python").loc[:, ["Value", "Parameter"]].set_index("Parameter").T.to_dict('list')
         pyParamsSetter(False, defaultDict)
     changeProgramLevel(1)
-async def prePD(event):
+async def preParamsDefault(event):
+    pyParamsSetter(docel('paramDefaults').checked, defaultDict)
     changeProgramLevel(1)
 async def prePlotTitration(event):#Generic version of app.OpenBaseTitrationButtonPushed & app.OpenAcidTitrationButtonPushed
     etf = event.target.files
@@ -88,111 +88,113 @@ async def prePlotTitration(event):#Generic version of app.OpenBaseTitrationButto
     
 
 async def preGenBCCurve(event):#Equivalent of app.GenerateBCCurveButtonPushed
-    if not programAtLeastLevel(3):#javascript, GraphHandling.js
-        return False
-    changeProgramLevel(4)
-    init_vol = float(docel("Init_Vol").value)
-    molHCl = float(docel("HCl").value)
-    molNaOH = float(docel("NaOH").value)
-    removeVal = float(docel("pH").value)
-    mingaps = float(docel("MinGap").value)
-    increment = float(docel("Increment").value)
-    NaClPercent = float(docel("NaClpercent").value)
-    set_globals("measuredpH", (acid_y[0] + base_y[0])/2)
-    D2B, oriBC, fillBC = pyGenBCCurve(init_vol, molHCl, molNaOH, removeVal, mingaps, increment, acid_x, acid_y, base_x, base_y)#python, GenBCCurve.py
-    fillcurve = xy2dataset(fillBC)
-    oricurve = xy2dataset(oriBC)
-    set_globals("oriBC", oriBC)
-    set_globals("BC", oriBC)
-    set_globals("fillBC", fillBC)
-    set_globals("orifillBC", fillBC)
-    maxBC = np.amax(BC[:,1])
-    WC = genWater(maxBC, NaClPercent, 1.5, 12.5)
-    plotBC(py2js(fillcurve), py2js(oricurve), maxBC)
-    watercurve = xy2dataset(WC)
-    plotThing(py2js(watercurve), 4, True, "Water")#javascript, graphHandling.js
+    if programAtLeastLevel(3):#javascript, GraphHandling.js
+        changeProgramLevel(4)
+        init_vol = float(docel("Init_Vol").value)
+        molHCl = float(docel("HCl").value)
+        molNaOH = float(docel("NaOH").value)
+        removeVal = float(docel("pH").value)
+        mingaps = float(docel("MinGap").value)
+        increment = float(docel("Increment").value)
+        NaClPercent = float(docel("NaClpercent").value)
+        set_globals("measuredpH", (acid_y[0] + base_y[0])/2)
+        D2B, oriBC, fillBC = pyGenBCCurve(init_vol, molHCl, molNaOH, removeVal, mingaps, increment, acid_x, acid_y, base_x, base_y)#python, GenBCCurve.py
+        fillcurve = xy2dataset(fillBC)
+        oricurve = xy2dataset(oriBC)
+        set_globals("oriBC", oriBC)
+        set_globals("BC", oriBC)
+        set_globals("fillBC", fillBC)
+        set_globals("orifillBC", fillBC)
+        maxBC = np.amax(BC[:,1])
+        WC = genWater(maxBC, NaClPercent, 1.5, 12.5)
+        plotBC(py2js(fillcurve), py2js(oricurve), maxBC)
+        watercurve = xy2dataset(WC)
+        plotThing(py2js(watercurve), 4, True, "Water")#javascript, graphHandling.js
+async def redoGenBCCurve(event):
+    if programAtLeastLevel(3):
+        await preGenBCCurve(event)
 async def shiftGraph(event):
-    if not programAtLeastLevel(4):#Level 4 or higher required
-        return False
-    shift = float(docel("electrode_shift").value)
-    newShift = np.zeros(oriBC.shape)
-    newShift[:,0] += shift
-    set_globals("BC", oriBC + newShift)
-    newShift = np.zeros(orifillBC.shape)
-    newShift[:,0] += shift
-    set_globals("fillBC", orifillBC + newShift)
-    maxBC = np.amax(BC[:,1])
-    plotBC(py2js(xy2dataset(fillBC)), py2js(xy2dataset(BC)), maxBC)
-    changeProgramLevel(4.3)
+    if programAtLeastLevel(4):#Level 4 or higher required
+        shift = float(docel("electrode_shift").value)
+        newShift = np.zeros(oriBC.shape)
+        newShift[:,0] += shift
+        set_globals("BC", oriBC + newShift)
+        newShift = np.zeros(orifillBC.shape)
+        newShift[:,0] += shift
+        set_globals("fillBC", orifillBC + newShift)
+        maxBC = np.amax(BC[:,1])
+        plotBC(py2js(xy2dataset(fillBC)), py2js(xy2dataset(BC)), maxBC)
+        changeProgramLevel(4.3)
 
 async def trimGraph(event):
-    if not programAtLeastLevel(4):#Level 4 or higher required
-        return False
-    trimbeg = int(docel("Trim_beg").value)
-    trimend = int(docel("Trim_end").value)
-    shift = float(docel("electrode_shift").value)
-    [BCpts, cols] = oriBC.shape
-    if trimbeg+trimend > BCpts:
-        return False
-    set_globals("BC", oriBC[range(trimbeg, BCpts), :])
-    [BCpts, cols] = BC.shape
-    BC[:, 0] += shift
-    set_globals("BC", BC[range(BCpts-trimend), :])
-    maxBC = np.amax(BC[:,1])
-    plotBC(py2js(xy2dataset(fillBC)), py2js(xy2dataset(BC)), maxBC)
-    if event.target.id == "Trim_beg":
-        index = 0.5
-    else:
-        index = 0.8
-    changeProgramLevel(4 + index)
+    if programAtLeastLevel(4):#Level 4 or higher required
+        trimbeg = int(docel("Trim_beg").value)
+        trimend = int(docel("Trim_end").value)
+        shift = float(docel("electrode_shift").value)
+        [BCpts, cols] = oriBC.shape
+        if trimbeg+trimend <= BCpts:
+            set_globals("BC", oriBC[range(trimbeg, BCpts), :])
+            [BCpts, cols] = BC.shape
+            BC[:, 0] += shift
+            set_globals("BC", BC[range(BCpts-trimend), :])
+            maxBC = np.amax(BC[:,1])
+            plotBC(py2js(xy2dataset(fillBC)), py2js(xy2dataset(BC)), maxBC)
+            if event.target.id == "Trim_beg":
+                index = 0.5
+            else:
+                index = 0.8
+            changeProgramLevel(4 + index)
     
 async def preModelBCCurve(event):#Equivalent of part of app.ModelBCCurveButtonPushed
-    if not programAtLeastLevel(4):
-        return False
-    order = int(docel("Order").value)
-    #initialize optimization with pK distribution across pts
-    NpKs = int(docel("NpKs").value)
-    minConc = float(docel("MinConc").value)
-    pK_tol = float(docel("pK_tol").value)
-    LB = float(docel("LB").value)
-    UB = float(docel("UB").value)
-    NaClpercent = float(docel("NaClpercent").value)
-    X0, Y0 = dataset2xy(2)#init X and Y vals (Nx1) N= no. data points)
-    X1, Y1 = dataset2xy(3)
-    X = np.hstack((X0, X1))
-    Y = np.hstack((Y0, Y1))
-    Y = Y[np.argsort(X)]
-    X.sort()
-    buftable, tbetainfo, SPX = pyModelBCCurve(order, NpKs, minConc, pK_tol, NaClpercent, LB, UB, X, Y)#python, ModelBCCurve.py
-    set_globals("buftable", buftable)
-    bcmat = xy2dataset(tbetainfo["BCCurve"])
-    maxBC = np.amax(BC)
-    if SPX["BCmat"][0, 0] != 0:
-        WC = xy2dataset(tbetainfo["waterCurve"])
-    else:
-        WC = xy2dataset(genWater(maxBC, NaClpercent, 1, 13))
-    plotThing(py2js(bcmat), 5, True, "Buffer Approx.")
-    plotThing(py2js(WC), 6, True, "Water Approx.")
-    changeProgramLevel(5)#Do not move
-    setupTable(py2js(buftable))
-    numberCleanup("sse", SPX["SSE"], -3)
-    numberCleanup("tb", tbetainfo["tBeta"])
-    useAdjC()
+    if programAtLeastLevel(4):
+        order = int(docel("Order").value)
+        #initialize optimization with pK distribution across pts
+        NpKs = int(docel("NpKs").value)
+        minConc = float(docel("MinConc").value)
+        pK_tol = float(docel("pK_tol").value)
+        LB = float(docel("LB").value)
+        UB = float(docel("UB").value)
+        NaClpercent = float(docel("NaClpercent").value)
+        X0, Y0 = dataset2xy(2)#init X and Y vals (Nx1) N= no. data points)
+        X1, Y1 = dataset2xy(3)
+        X = np.hstack((X0, X1))
+        Y = np.hstack((Y0, Y1))
+        Y = Y[np.argsort(X)]
+        X.sort()
+        buftable, tbetainfo, SPX = pyModelBCCurve(order, NpKs, minConc, pK_tol, NaClpercent, LB, UB, X, Y)#python, ModelBCCurve.py
+        set_globals("buftable", buftable)
+        bcmat = xy2dataset(tbetainfo["BCCurve"])
+        maxBC = np.amax(BC)
+        if SPX["BCmat"][0, 0] != 0:
+            WC = xy2dataset(tbetainfo["waterCurve"])
+        else:
+            WC = xy2dataset(genWater(maxBC, NaClpercent, 1, 13))
+        plotThing(py2js(bcmat), 5, True, "Buffer Approx.")
+        plotThing(py2js(WC), 6, True, "Water Approx.")
+        changeProgramLevel(5)#Do not move
+        setupTable(py2js(buftable))
+        numberCleanup("sse", SPX["SSE"], -3)
+        numberCleanup("tb", tbetainfo["tBeta"])
+        useAdjC(buftable)
+
 async def preabSwap(event):
-    global buftable
-    if not programAtLevel(5):
-        return False
-    cell, newLetter = abSwap(event)
-    if cell:
-        buftable[2][cell] = newLetter
-        useAdjC()
+    T = buftable
+    if programAtLeastLevel(5):
+        cell, newLetter = js2py(abSwap(event))
+        if cell:
+            T[2][cell] = newLetter
+            set_globals("buftable", T)
+            useAdjC(buftable)
+
 async def preUseAdjC(event):
-    if not programAtLevel(5):
-        return False
-    useAdjC()
+    if programAtLeastLevel(5):
+        useAdjC(buftable)
+async def hardReset(event):
+    changeProgramLevel(0)
+
 def main():#Sets the events for certain buttons and fields on BreditForm
     docel("paramFile").addEventListener("change", create_proxy(preParamsSetter), False)
-    docel("paramDefaults").addEventListener("change", create_proxy(prePD), False)
+    docel("paramDefaults").addEventListener("change", create_proxy(preParamsDefault), False)
     docel("acid_titr_button").addEventListener("change", create_proxy(prePlotTitration), False)
     docel("base_titr_button").addEventListener("change", create_proxy(prePlotTitration), False)
     docel("BC_Curve_button").addEventListener("click", create_proxy(preGenBCCurve), False)
@@ -202,6 +204,12 @@ def main():#Sets the events for certain buttons and fields on BreditForm
     docel("adjc_checkbox").addEventListener("change", create_proxy(preUseAdjC), False)
     docel("BC_Model_button").addEventListener("click", create_proxy(preModelBCCurve), False)
     docel("myTable").addEventListener("click", create_proxy(preabSwap), False)
+    docel("clear_button").addEventListener("click", create_proxy(hardReset), False)
+    for key in defaultDict.keys():
+        if not (key.__eq__("Trim_beg") or key.__eq__("Trim_end")):
+                docel(key).addEventListener("change", create_proxy(redoGenBCCurve), False)
+    
+
 def dataset2xy(dataset_ind):#Translates chart.js datasets into numpy arrays
     titr = js2py(chartCurve.data.datasets[dataset_ind].data)
     x = np.arange(len(titr), dtype=float)
@@ -292,7 +300,7 @@ def AdjustpKaMonoprotic(pKo, I, TempC):
     temp = -b*I + np.sqrt(I)/(1+np.sqrt(I))
     return pKo - 2*A*temp
 
-def useAdjC():
+def useAdjC(buftable):
         isChecked = docel("adjc_checkbox").checked
         if isChecked:
             adjC_results = pyGetAdjCT(measuredpH, buftable, float(docel("NaClpercent").value))

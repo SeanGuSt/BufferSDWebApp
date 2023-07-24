@@ -1,9 +1,7 @@
 """
 Routes and views for the flask application.
 """
-
-from datetime import datetime
-from flask import Flask, render_template, request
+from flask import render_template, request
 from BufferSDWebApp import app
 @app.route('/')
 @app.route('/form', methods = ['POST', 'GET'])

@@ -63,8 +63,9 @@
   <ItemGroup>
     <Content Include="BufferSDWebApp\static\content\myCSS.css" />
     <Content Include="BufferSDWebApp\static\paramfile_test.csv" />
-    <Content Include="BufferSDWebApp\static\scripts\ButtonColorHandling.js" />
+    <Content Include="BufferSDWebApp\static\scripts\InputHandling.js" />
     <Content Include="BufferSDWebApp\static\scripts\GraphHandling.js" />
+    <Content Include="BufferSDWebApp\static\scripts\TableHandling.js" />
     <Content Include="BufferSDWebApp\templates\BreidtForm.html" />
     <Content Include="requirements.txt" />
     <Content Include="BufferSDWebApp\static\content\bootstrap.css" />
