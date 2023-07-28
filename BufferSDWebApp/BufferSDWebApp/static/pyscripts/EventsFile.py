@@ -113,20 +113,7 @@ async def preGenBCCurve(event):#Equivalent of app.GenerateBCCurveButtonPushed
 async def redoGenBCCurve(event):
     if programAtLeastLevel(3):
         await preGenBCCurve(event)
-async def shiftGraph(event):
-    if programAtLeastLevel(4):#Level 4 or higher required
-        shift = float(docel("electrode_shift").value)
-        newShift = np.zeros(oriBC.shape)
-        newShift[:,0] += shift
-        set_globals("BC", oriBC + newShift)
-        newShift = np.zeros(orifillBC.shape)
-        newShift[:,0] += shift
-        set_globals("fillBC", orifillBC + newShift)
-        maxBC = np.amax(BC[:,1])
-        plotBC(py2js(xy2dataset(fillBC)), py2js(xy2dataset(BC)), maxBC)
-        changeProgramLevel(4.3)
-
-async def trimGraph(event):
+async def shifTrimGraph(event):
     if programAtLeastLevel(4):#Level 4 or higher required
         trimbeg = int(docel("Trim_beg").value)
         trimend = int(docel("Trim_end").value)
@@ -138,11 +125,17 @@ async def trimGraph(event):
             BC[:, 0] += shift
             set_globals("BC", BC[range(BCpts-trimend), :])
             maxBC = np.amax(BC[:,1])
+            newFill = np.zeros(orifillBC.shape)
+            newFill[:,0] += shift
+            set_globals("fillBC", orifillBC + newFill)
             plotBC(py2js(xy2dataset(fillBC)), py2js(xy2dataset(BC)), maxBC)
-            if event.target.id == "Trim_beg":
-                index = 0.5
-            else:
-                index = 0.8
+            match event.target.id:
+                case "electrode_shift":
+                    index = 0.3
+                case "Trim_beg":
+                    index = 0.5
+                case "Trim_end":
+                    index = 0.8
             changeProgramLevel(4 + index)
     
 async def preModelBCCurve(event):#Equivalent of part of app.ModelBCCurveButtonPushed
@@ -175,20 +168,19 @@ async def preModelBCCurve(event):#Equivalent of part of app.ModelBCCurveButtonPu
         setupTable(py2js(buftable))
         numberCleanup("sse", SPX["SSE"], -3)
         numberCleanup("tb", tbetainfo["tBeta"])
-        useAdjC(buftable)
+        useAdjC()
 
 async def preabSwap(event):
-    T = buftable
+    global buftable
     if programAtLeastLevel(5):
         cell, newLetter = js2py(abSwap(event))
         if cell:
-            T[2][cell] = newLetter
-            set_globals("buftable", T)
-            useAdjC(buftable)
+            buftable[2][cell] = newLetter
+            useAdjC()
 
 async def preUseAdjC(event):
     if programAtLeastLevel(5):
-        useAdjC(buftable)
+        useAdjC()
 async def hardReset(event):
     changeProgramLevel(0)
 
@@ -198,9 +190,9 @@ def main():#Sets the events for certain buttons and fields on BreditForm
     docel("acid_titr_button").addEventListener("change", create_proxy(prePlotTitration), False)
     docel("base_titr_button").addEventListener("change", create_proxy(prePlotTitration), False)
     docel("BC_Curve_button").addEventListener("click", create_proxy(preGenBCCurve), False)
-    docel("electrode_shift").addEventListener("change", create_proxy(shiftGraph), False)
-    docel("Trim_beg").addEventListener("change", create_proxy(trimGraph), False)
-    docel("Trim_end").addEventListener("change", create_proxy(trimGraph), False)
+    docel("electrode_shift").addEventListener("change", create_proxy(shifTrimGraph), False)
+    docel("Trim_beg").addEventListener("change", create_proxy(shifTrimGraph), False)
+    docel("Trim_end").addEventListener("change", create_proxy(shifTrimGraph), False)
     docel("adjc_checkbox").addEventListener("change", create_proxy(preUseAdjC), False)
     docel("BC_Model_button").addEventListener("click", create_proxy(preModelBCCurve), False)
     docel("myTable").addEventListener("click", create_proxy(preabSwap), False)
@@ -300,7 +292,7 @@ def AdjustpKaMonoprotic(pKo, I, TempC):
     temp = -b*I + np.sqrt(I)/(1+np.sqrt(I))
     return pKo - 2*A*temp
 
-def useAdjC(buftable):
+def useAdjC():
         isChecked = docel("adjc_checkbox").checked
         if isChecked:
             adjC_results = pyGetAdjCT(measuredpH, buftable, float(docel("NaClpercent").value))
