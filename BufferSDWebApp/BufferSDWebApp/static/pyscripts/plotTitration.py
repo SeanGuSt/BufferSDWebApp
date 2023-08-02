@@ -23,3 +23,4 @@ def getTitrationData(temp):
                   y.append(float(vals[3]))
     return np.array(x), np.array(y)
 
+

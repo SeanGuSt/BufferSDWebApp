@@ -13,7 +13,7 @@ def pyModelBCCurve(order, NpKs, minConc, pK_tol, NaClpercent, LB, UB, X, Y):#Equ
         tempMat[k] = scbcpred[indxvec[k], ::-1]#The BC and pK values
     SPX = SimplexBCPK_DF5(scbcpred, tempMat, minConc, pK_tol, LB, UB)#python, fminconpy.py
     letters = getAB_letters(SPX["ABmat"])#python, found below
-    buftable = []
+    buftable = []#Build the table
     buftable.append(SPX["ABmat"][:, 0].tolist())
     buftable.append(SPX["ABmat"][:, 1].tolist())
     buftable.append(letters)

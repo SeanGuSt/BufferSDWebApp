@@ -1,5 +1,5 @@
 import numpy as np
-from js import document, chartCurve, JSON, setupTable, abSwap, programAtLeastLevel, plotThing, plotBC, numberCleanup, changeProgramLevel
+from js import document, chartCurve, JSON, setupTable, abSwap, programAtLeastLevel, plotThing, plotBC, numberCleanup, changeProgramLevel, findLabelsAndValues, bufFile
 from pyodide.ffi import create_proxy
 from json import dumps, loads
 import pandas as pd
@@ -55,7 +55,7 @@ async def preParamsSetter(event):#Equivalent to app.setParamTable
 async def preParamsDefault(event):
     pyParamsSetter(docel('paramDefaults').checked, defaultDict)
     changeProgramLevel(1)
-async def prePlotTitration(event):#Generic version of app.OpenBaseTitrationButtonPushed & app.OpenAcidTitrationButtonPushed
+async def prePlotTitration(event):#Generic version of app.OpenAcidTitrationButtonPushed & app.OpenBaseTitrationButtonPushed 
     etf = event.target.files
     gotFiles = etf.length>0
     if not programAtLeastLevel(1):
@@ -183,6 +183,13 @@ async def preUseAdjC(event):
         useAdjC()
 async def hardReset(event):
     changeProgramLevel(0)
+async def getResults(event):
+    if programAtLeastLevel(5):
+        ing = docel("ingredient").value;
+        outputids = ['ingredient', 'conTitr', 'HCl', 'NaOH', 'Init_Vol', 'NaClpercent', 'Trim_beg', 'Trim_end', 'sse', 'eph', 'adjc', 'tb']
+        findLabelsAndValues(py2js(outputids), 'Report_' + ing + '.csv')
+        bufFile(py2js(buftable), 'BCTable_' + ing + '.csv')
+
 
 def main():#Sets the events for certain buttons and fields on BreditForm
     docel("paramFile").addEventListener("change", create_proxy(preParamsSetter), False)
@@ -197,6 +204,7 @@ def main():#Sets the events for certain buttons and fields on BreditForm
     docel("BC_Model_button").addEventListener("click", create_proxy(preModelBCCurve), False)
     docel("myTable").addEventListener("click", create_proxy(preabSwap), False)
     docel("clear_button").addEventListener("click", create_proxy(hardReset), False)
+    docel("download_results_button").addEventListener("click", create_proxy(getResults), False)
     for key in defaultDict.keys():
         if not (key.__eq__("Trim_beg") or key.__eq__("Trim_end")):
                 docel(key).addEventListener("change", create_proxy(redoGenBCCurve), False)
