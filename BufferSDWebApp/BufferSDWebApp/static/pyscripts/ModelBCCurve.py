@@ -1,6 +1,5 @@
 import numpy as np
-#from fminconpy import SimplexBCPK_DF5
-#from EventsFile import BetaModel_AB
+from static.pyscripts.fminconpy import SimplexBCPK_DF5, BetaModel_AB
 from decimal import Decimal, localcontext, ROUND_HALF_UP
 def pyModelBCCurve(order, NpKs, minConc, pK_tol, NaClpercent, LB, UB, X, Y):#Equivalent of part of app.ModelBCCurveButtonPushed
     res = SCBC_fit(X, Y, order)#get trig data: python, found below
@@ -32,18 +31,16 @@ def SCBC_fit(X, Y, order, calcArea=False):#Generic version of SCBCfit_only & SCB
     terms = 2*order + 1#b0 + 2 terms (for "degree" or "harmonic")
     N = len(X)#number of X data points
 
-    #set up partial deriv matrix with summed sin, cos terms 
-    def GetFactorMat(terms, order, N):
-        #get a vector (termsxN) with 2*order + 1 number of sine - cosine 
-        # terms (with initial 1) and appropriate multiplier
-        k = 1#matrix row index, skip first row (all 1s)
-        mat = np.ones((terms, N))#one row of X vals for each term 
-        for j in range(1, order+1):#for each set of terms (order)
-            mat[k,:] = np.sin(j*mul*X)#sine term (times order index and mult.)
-            mat[k+1,:] = np.cos(j*mul*X)#cosine term (times order index and mult.)
-            k+=2#advance row index
-        return mat
-    factormat = GetFactorMat(terms,order,N); #get matrix of X for each deriv
+    #set up partial deriv matrix with summed sin, cos terms
+    #get a vector (termsxN) with 2*order + 1 number of sine - cosine 
+    # terms (with initial 1) and appropriate multiplier
+    k = 1#matrix row index, skip first row (all 1s)
+    #get matrix of X for each deriv
+    factormat = np.ones((terms, N))#one row of X vals for each term 
+    for j in range(1, order+1):#for each set of terms (order)
+        factormat[k,:] = np.sin(j*mul*X)#sine term (times order index and mult.)
+        factormat[k+1,:] = np.cos(j*mul*X)#cosine term (times order index and mult.)
+        k+=2#advance row index
     pmat = np.zeros((terms,terms));          #square matrix for partial derivatives
     for l in range(terms):#for each row of square matrix (L not 1)
         for m in range(terms):#for each col of square matrix
@@ -70,7 +67,8 @@ def SCBC_fit(X, Y, order, calcArea=False):#Generic version of SCBCfit_only & SCB
             p+=2
         evalMin += b0*minX
         evalMax += b0*maxX
-        return evalMax - evalMin
+        evalArea = evalMax - evalMin
+        return evalArea
     
     def CalcSCModel(currPrms, Xvals):#Equivalent of CalcSCModel from SCBCfit_only.m
         #calc model with final params and predicted X values
@@ -84,10 +82,8 @@ def SCBC_fit(X, Y, order, calcArea=False):#Generic version of SCBCfit_only & SCB
         return b0 + sumterms
 
     modelY = CalcSCModel(params,modelX)#calc predicted vals for each model X
-    def CalcSC_SSE(currPrms):#calc sum squared error for param set
-        predYvals = CalcSCModel(currPrms, X)#uses obs X values for this
-        return np.sum(np.power(Y - predYvals, 2))#sum squared errors, predicted minus Y 
-    SSE = CalcSC_SSE(params)#use predicted parameters to calc SSE
+    predY = CalcSCModel(params, X)#uses obs X values for this
+    SSE = np.sum(np.power(Y - predY,2))#sum squared errors, predicted minus Y
     Obs = np.transpose(np.vstack((X, Y)))
     Pred = np.transpose(np.vstack((modelX, modelY)))
     res["Obs"] = Obs#BC Curve
@@ -136,6 +132,8 @@ def get_tBetaData(ABmat,pHmin,pHmax,waterIS,crvIS):#Equivalent of get_tBetaData 
     tbetainfo["watertBeta"] = 100*SCBC_fit(wtr[:,0], wtr[:,1], 15, True)
     tbetainfo["tBeta"] = tbetainfo["bctBeta"] - tbetainfo["watertBeta"]
     return tbetainfo
+
+
 
 
 

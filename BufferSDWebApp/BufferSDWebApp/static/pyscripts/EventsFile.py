@@ -5,6 +5,15 @@ from json import dumps, loads
 import pandas as pd
 import io
 import asyncio
+beginning_or_clear_all = 0;
+parameters_input = 1;
+acid_data_added = 2;
+base_data_added = 3;
+curve_generated_gaps_filled = 4;
+pH_electrode_shifted = 4.3;
+beginning_trimmed = 4.5;
+ending_trimmed = 4.8;
+curve_modeled = 5;
 #Defaults, in case the user hasn't something to input
 defaultDict = {
         'pH':0.05,
@@ -30,7 +39,7 @@ BC = None
 oriBC = None
 fillBC = None
 orifillBC = None
-measuredpH = -1
+measuredpH = -1 
 buftable = None
 acid_x = None
 acid_y = None
@@ -51,45 +60,38 @@ async def preParamsSetter(event):#Equivalent to app.setParamTable
     else:
         #defaultDic = pd.read_csv("static/paramfile_test.csv", engine="python").loc[:, ["Value", "Parameter"]].set_index("Parameter").T.to_dict('list')
         pyParamsSetter(False, defaultDict)
-    changeProgramLevel(1)
+    changeProgramLevel(parameters_input)
 async def preParamsDefault(event):
     pyParamsSetter(docel('paramDefaults').checked, defaultDict)
-    changeProgramLevel(1)
+    changeProgramLevel(parameters_input)
 async def prePlotTitration(event):#Generic version of app.OpenAcidTitrationButtonPushed & app.OpenBaseTitrationButtonPushed 
     etf = event.target.files
     gotFiles = etf.length>0
-    if not programAtLeastLevel(1):
-            return False
-    if event.target.id == "acid_titr_button":
-        index = 0
-    else:
-        if not programAtLeastLevel(2):
-            return False
-        index = 1
-    changeProgramLevel(2 + index)#javascript, GraphHandling.js
-    if gotFiles:
+    if programAtLeastLevel(parameters_input) and gotFiles:
         for file in etf:
             trueFile = await file.text()
         f = open("temp.txt", "w")
         f.write(trueFile)
         f.close()
         x, y = getTitrationData("temp.txt")#python, plotTitration.py
-    else:
-        x = [0]
-        y = [0]
-    if index==0:
-        set_globals("acid_x", x)
-        set_globals("acid_y", y)
-    else:
-        set_globals("base_x", x)
-        set_globals("base_y", y)
+        if event.target.id == "acid_titr_button":
+            index = acid_data_added
+            set_globals("acid_x", x)
+            set_globals("acid_y", y)
+        elif event.target.id == "base_titr_button" and programAtLeastLevel(acid_data_added):
+            index = base_data_added
+            set_globals("base_x", x)
+            set_globals("base_y", y)
+        else:
+            return False
+    changeProgramLevel(index)#javascript, GraphHandling.js  
     results = xy2dataset(x, y)
-    plotThing(py2js(results), index)#javascript, GraphHandling.js
+    plotThing(py2js(results), index - 2)#javascript, GraphHandling.js
     
 
 async def preGenBCCurve(event):#Equivalent of app.GenerateBCCurveButtonPushed
-    if programAtLeastLevel(3):#javascript, GraphHandling.js
-        changeProgramLevel(4)
+    if programAtLeastLevel(base_data_added):#javascript, GraphHandling.js
+        changeProgramLevel(curve_generated_gaps_filled)
         init_vol = float(docel("Init_Vol").value)
         molHCl = float(docel("HCl").value)
         molNaOH = float(docel("NaOH").value)
@@ -110,11 +112,12 @@ async def preGenBCCurve(event):#Equivalent of app.GenerateBCCurveButtonPushed
         plotBC(py2js(fillcurve), py2js(oricurve), maxBC)
         watercurve = xy2dataset(WC)
         plotThing(py2js(watercurve), 4, True, "Water")#javascript, graphHandling.js
+        await shifTrimGraph(event)
 async def redoGenBCCurve(event):
-    if programAtLeastLevel(3):
+    if programAtLeastLevel(base_data_added):
         await preGenBCCurve(event)
 async def shifTrimGraph(event):
-    if programAtLeastLevel(4):#Level 4 or higher required
+    if programAtLeastLevel(curve_generated_gaps_filled):#Level 4 or higher required
         trimbeg = int(docel("Trim_beg").value)
         trimend = int(docel("Trim_end").value)
         shift = float(docel("electrode_shift").value)
@@ -131,15 +134,15 @@ async def shifTrimGraph(event):
             plotBC(py2js(xy2dataset(fillBC)), py2js(xy2dataset(BC)), maxBC)
             match event.target.id:
                 case "electrode_shift":
-                    index = 0.3
+                    changeProgramLevel(pH_electrode_shifted)
                 case "Trim_beg":
-                    index = 0.5
+                    changeProgramLevel(beginning_trimmed)
                 case "Trim_end":
-                    index = 0.8
-            changeProgramLevel(4 + index)
+                    changeProgramLevel(ending_trimmed)
+            
     
 async def preModelBCCurve(event):#Equivalent of part of app.ModelBCCurveButtonPushed
-    if programAtLeastLevel(4):
+    if programAtLeastLevel(curve_generated_gaps_filled):
         order = int(docel("Order").value)
         #initialize optimization with pK distribution across pts
         NpKs = int(docel("NpKs").value)
@@ -149,7 +152,7 @@ async def preModelBCCurve(event):#Equivalent of part of app.ModelBCCurveButtonPu
         UB = float(docel("UB").value)
         NaClpercent = float(docel("NaClpercent").value)
         X0, Y0 = dataset2xy(2)#init X and Y vals (Nx1) N= no. data points)
-        X1, Y1 = dataset2xy(3)
+        X1, Y1 = dataset2xy(3)#gap filler X and Y vals
         X = np.hstack((X0, X1))
         Y = np.hstack((Y0, Y1))
         Y = Y[np.argsort(X)]
@@ -164,7 +167,7 @@ async def preModelBCCurve(event):#Equivalent of part of app.ModelBCCurveButtonPu
             WC = xy2dataset(genWater(maxBC, NaClpercent, 1, 13))
         plotThing(py2js(bcmat), 5, True, "Buffer Approx.")
         plotThing(py2js(WC), 6, True, "Water Approx.")
-        changeProgramLevel(5)#Do not move
+        changeProgramLevel(curve_modeled)#Do not move
         setupTable(py2js(buftable))
         numberCleanup("sse", SPX["SSE"], -3)
         numberCleanup("tb", tbetainfo["tBeta"])
@@ -172,19 +175,19 @@ async def preModelBCCurve(event):#Equivalent of part of app.ModelBCCurveButtonPu
 
 async def preabSwap(event):
     global buftable
-    if programAtLeastLevel(5):
+    if programAtLeastLevel(curve_modeled):
         cell, newLetter = js2py(abSwap(event))
         if cell:
             buftable[2][cell] = newLetter
             useAdjC()
 
 async def preUseAdjC(event):
-    if programAtLeastLevel(5):
+    if programAtLeastLevel(curve_modeled):
         useAdjC()
 async def hardReset(event):
-    changeProgramLevel(0)
+    changeProgramLevel(beginning_or_clear_all)
 async def getResults(event):
-    if programAtLeastLevel(5):
+    if programAtLeastLevel(curve_modeled):
         ing = docel("ingredient").value;
         outputids = ['ingredient', 'conTitr', 'HCl', 'NaOH', 'Init_Vol', 'NaClpercent', 'Trim_beg', 'Trim_end', 'sse', 'eph', 'adjc', 'tb']
         findLabelsAndValues(py2js(outputids), 'Report_' + ing + '.csv')
@@ -251,64 +254,17 @@ def pyParamsSetter(isChecked, givenDict):
             docel(x).value = py2js(y)
     else:#otherwise clear all fields
         for x in givenDict:
-            docel(x).value = ""
-          
-def genWater(maxBC, NaClpercent, start, finish, start_inc = 0.075, finish_inc = 0.1, epsilon = 0.0001, step = 0.05):
-    ABmat = np.zeros((1, 2))
-    for i in range(1, 11):
-        waterpHvec = np.arange(start, finish+epsilon, step)
-        WC = BetaModel_AB(ABmat, NaClpercent, waterpHvec)
-        maxWC = np.amax(WC[:,1])
-        if maxWC < 1.7*maxBC:
-            break
-        else:
-            start += i*start_inc
-            finish -= i*finish_inc
-    
-    return WC
-def BetaModel_AB(ABmat, NaClpercent, pHvec):
-    if ABmat.ndim > 1:
-        Conc = ABmat[:,0]
-        pKa = ABmat[:,1] 
-    else:
-        Conc = np.array(ABmat[0], ndmin=1)
-        pKa = np.array(ABmat[1], ndmin=1)
-    const = 2.302585 #natural log of 10
-    Temp = 25
-    IonicStr = NaClpercent/5.84
-    Kw = 10**-AdjustpKaMonoprotic(14, IonicStr, Temp)
-    pKa = AdjustpKaMonoprotic(pKa, IonicStr, Temp)
-    Ka = 10**-pKa
-    num_buffers = np.amax(np.shape(Conc))
-    H = 10**-pHvec
-    num_pHvals = np.amax(np.shape(pHvec))
-    OH = Kw/H
-    buffvecs = np.zeros((num_pHvals, num_buffers))
-    BCCurve = np.zeros((num_pHvals, 2))
-    for j in range(num_buffers):
-        buffvecs[:,j] = Conc[j]*Ka[j]*H/np.power(H+Ka[j], 2)
-    buffsum = np.sum(buffvecs, 1)
-    BCCurve[:,0] = pHvec
-    BCCurve[:,1] = const*(buffsum + OH + H)
-    return BCCurve
-
-def AdjustpKaMonoprotic(pKo, I, TempC):
-    b = 0.3
-    epsilon = 78.3808
-    degK = TempC + 273
-    A = 1.825*(10**6)*np.power(epsilon*degK, -3/2)
-    temp = -b*I + np.sqrt(I)/(1+np.sqrt(I))
-    return pKo - 2*A*temp
+            docel(x).value = None
 
 def useAdjC():
         isChecked = docel("adjc_checkbox").checked
         if isChecked:
-            adjC_results = pyGetAdjCT(measuredpH, buftable, float(docel("NaClpercent").value))
+            adjC_results = pyGetAdjCT(measuredpH, buftable, float(docel("NaClpercent").value))#python, found in getAdjCT.py
             adjC = adjC_results.x[0]
             numberCleanup("adjc", adjC)
         else:
             adjC = 0
-            docel("adjc").value = ""
+            docel("adjc").value = None
         pH = CalcpH_ABT(buftable, float(docel("NaClpercent").value), adjC)
         numberCleanup("eph", pH)
 main()
